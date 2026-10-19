@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Handlebar Colors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
+<style>
+  :root{
+    --bg:#fdfdfc; --card:#fff; --fg-100:#000; --fg-200:#404040; --fg-300:#595959; --fg-400:#999;
+    --line:#00000014; --dots:#5eb1ef;
+    --seg:linear-gradient(#f5f5f5,#ededed); --seg-shadow:inset 0 0 1px 1px #ffffff24,0 0 0 1px #00000014,0 2px 2px #0000000a;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#111110; --card:#171717; --fg-100:#fff; --fg-200:#ededed; --fg-300:#bfbfbf; --fg-400:#8c8c8c;
+    --line:#ffffff14; --dots:#2870bd;
+    --seg:linear-gradient(#212121,#121212); --seg-shadow:inset 0 0 0 1px #ffffff1a;
+    color-scheme:dark;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg-100);font:16px/1.5 Inter,system-ui,sans-serif;font-feature-settings:"cv01","ss03";-webkit-font-smoothing:antialiased}
+  .glow{position:fixed;inset:0 0 auto;height:50vh;min-height:320px;z-index:-1;pointer-events:none;opacity:.6;
+    background:radial-gradient(var(--dots) 1px,transparent 1.5px) 0 0/14px 14px;
+    -webkit-mask:linear-gradient(#000 30%,transparent 96%),linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);-webkit-mask-composite:source-in;
+    mask-image:linear-gradient(#000 30%,transparent 96%),linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-composite:intersect}
+  main{max-width:732px;margin:0 auto;padding:80px 16px 96px}
+  h1{margin:0;text-align:center;font-size:clamp(36px,7vw,48px);line-height:1.08;font-weight:575;letter-spacing:-.025em;text-wrap:balance}
+  .lede{margin:24px auto 40px;max-width:500px;text-align:center;font-size:20px;color:var(--fg-200);text-wrap:balance}
+  .card{background:var(--card);border:1px solid var(--line);box-shadow:inset 0 1px 1px #0000000d;border-radius:16px;padding:8px}
+  .drop{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 16px;border-radius:10px;text-align:center;color:var(--fg-300);font-size:14px;transition:background .2s}
+  .drop.over{background:#0082fb12}
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:0;border-radius:8px;cursor:pointer;
+    background:linear-gradient(#41a4ff,#0082fb);color:#fff;font:575 15px Inter,system-ui,sans-serif;text-shadow:0 .5px #001e4252;
+    box-shadow:inset 0 0 1px 1px #ffffff2e,0 0 0 1px #00000014,0 2px 2px #0000000a,0 0 0 1px #1e93fd;transition:filter .2s}
+  .btn:hover{filter:brightness(105%)}
+  .ghost{height:32px;padding:0 12px;border:0;border-radius:8px;background:var(--seg);box-shadow:var(--seg-shadow);color:var(--fg-100);font:500 13px Inter,system-ui,sans-serif;cursor:pointer;transition:filter .2s}
+  .ghost:hover{filter:brightness(.975)}
+  #file{position:absolute;opacity:0;pointer-events:none}
+  .editor{display:none}
+  .editor.on{display:block}
+  canvas{display:block;max-width:100%;touch-action:none;cursor:none;border-radius:10px}
+  .stage{position:relative;overflow:hidden;border-radius:10px;width:fit-content;max-width:100%;margin:0 auto}
+  /* pinned: editor sticks to the top while scrolling the color lists; photo shrinks so the lists stay visible */
+  .card.pinned{position:sticky;top:8px;z-index:5;box-shadow:inset 0 1px 1px #0000000d,0 8px 24px #0000001a}
+  .card.pinned canvas{max-height:45vh}
+  .ghost[aria-pressed=true]{color:#0082fb}
+  .stage.pick canvas{cursor:crosshair}
+  #cursor{position:absolute;left:0;top:0;border-radius:50%;pointer-events:none;border:1px solid #fff;box-shadow:0 0 0 1px #0009,inset 0 0 0 1px #0009;display:none}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:8px 4px 4px}
+  .seg{display:inline-flex;border-radius:8px;box-shadow:var(--seg-shadow);overflow:hidden}
+  .seg input{position:absolute;opacity:0}
+  .seg label{padding:6px 12px;font-size:13px;font-weight:500;color:var(--fg-300);background:var(--seg);cursor:pointer;transition:color .2s}
+  .seg label+input+label{border-left:1px solid var(--line)}
+  .seg input:checked+label{color:var(--fg-100);background:var(--card)}
+  .seg input:focus-visible+label{outline:2px solid #0082fb;outline-offset:-2px}
+  .brush{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg-300)}
+  input[type=range]{accent-color:#0082fb;width:96px}
+  h2{margin:40px 0 12px;font-size:13px;font-weight:500;color:var(--fg-400);text-transform:uppercase;letter-spacing:.05em}
+  .row{display:flex;flex-wrap:wrap;gap:8px}
+  .sw{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 6px;border:1px solid var(--line);border-radius:999px;background:var(--card);
+    color:var(--fg-200);font:500 13px Inter,system-ui,sans-serif;cursor:pointer;transition:border-color .2s,transform .1s}
+  .sw:hover{border-color:var(--fg-400)}
+  .sw:active{transform:scale(.97)}
+  .sw.on{border-color:#0082fb;box-shadow:0 0 0 1px #0082fb;color:var(--fg-100)}
+  .sw i{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1px #0000001f}
+  .custom{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--fg-300)}
+  input[type=color]{width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:999px;background:none;cursor:pointer}
+  input[type=color]::-webkit-color-swatch-wrapper{padding:3px}
+  input[type=color]::-webkit-color-swatch{border:0;border-radius:50%}
+  .hint{margin:8px 4px 0;font-size:13px;color:var(--fg-400)}
+  footer{display:flex;justify-content:space-between;max-width:732px;margin:0 auto;padding:0 16px 32px;font-size:13px;color:#c2c2c2}
+  /* side sheet (native <dialog>) */
+  .sheet{position:fixed;inset:0 0 0 auto;width:min(400px,100vw);height:100dvh;max-height:none;margin:0;padding:0;border:0;border-left:1px solid var(--line);
+    background:var(--card);color:var(--fg-100);box-shadow:-16px 0 48px #0000002e;animation:slide-in .25s cubic-bezier(.2,.8,.2,1)}
+  .sheet::backdrop{background:#0000004d;animation:fade .25s}
+  @keyframes slide-in{from{transform:translateX(100%)}}
+  @keyframes fade{from{opacity:0}}
+  .sheet header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .sheet header h3{margin:0;font-size:16px;font-weight:575;letter-spacing:-.01em}
+  .sheet .body{padding:16px 20px 32px;overflow:auto;height:calc(100% - 61px)}
+  .chip{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:14px;color:var(--fg-200)}
+  .chip i{width:36px;height:36px;border-radius:50%;box-shadow:inset 0 0 0 1px #0000001f;flex:none}
+  .prod{display:block;padding:12px 14px;margin-bottom:8px;border:1px solid var(--line);border-radius:12px;color:inherit;text-decoration:none;transition:border-color .2s,background .2s}
+  .prod:hover{border-color:#0082fb;background:#0082fb0a}
+  .prod b{display:block;font-size:14px;font-weight:550}
+  .prod span{font-size:12px;color:var(--fg-400)}
+  .prod.more{border-style:dashed}
+  .note{font-size:12px;color:var(--fg-400);margin-top:16px}
+  footer b{font-weight:500;color:#989898}
+</style>
+
+<div class="glow" aria-hidden="true"></div>
+<main>
+  <h1>Find the right bar tape</h1>
+  <p class="lede">Upload a photo of your bike. Get handlebar colors that match the frame and wheels, then preview them on the bike.</p>
+
+  <div class="card pinned" id="card">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="image/*">
+      <span class="btn">Upload a photo</span>
+      <span>or drop an image here</span>
+    </label>
+    <div class="editor" id="editor">
+      <div class="stage" id="stage"><canvas id="cv" width="0" height="0"></canvas><div id="cursor"></div></div>
+      <div class="bar">
+        <div class="seg" role="radiogroup" aria-label="Tool">
+          <input type="radio" name="mode" value="paint" id="m-paint" checked><label for="m-paint">Paint bars</label>
+          <input type="radio" name="mode" value="erase" id="m-erase"><label for="m-erase">Erase</label>
+          <input type="radio" name="mode" value="pick" id="m-pick"><label for="m-pick">Pick frame</label>
+        </div>
+        <label class="brush">Size <input type="range" id="size" min="3" max="80" value="20"></label>
+        <label class="brush">Opacity <input type="range" id="opacity" min="5" max="100" value="100"></label>
+        <div class="row">
+          <button class="ghost" id="clear">Clear</button>
+          <button class="ghost" id="pin" aria-pressed="true" title="Keep the photo and tools visible while scrolling">Pinned</button>
+          <button class="ghost" id="new">New photo</button>
+          <button class="btn" id="dl" style="height:32px">Download</button>
+          <button class="ghost" id="shop">Find on bike24</button>
+        </div>
+      </div>
+      <p class="hint">Paint over the handlebars, then choose a color below.</p>
+    </div>
+  </div>
+
+  <section id="results" hidden>
+  <h2>Detected colors · click to set the frame color</h2>
+  <div class="row" id="detected"></div>
+  <h2>Suggested handlebar colors</h2>
+  <div class="row bars" id="suggest"></div>
+  <h2>Go totally crazy · just an experiment</h2>
+  <div class="row bars" id="crazy"></div>
+  <div class="row" style="margin-top:12px"><label class="custom"><input type="color" id="custom"> Custom color</label></div>
+  </section>
+</main>
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
+  <header><h3 id="sheet-title">Bar tape on bike24</h3><button class="ghost" id="sheet-close" aria-label="Close">Close</button></header>
+  <div class="body" id="sheet-body"></div>
+</dialog>
+<footer><span><b>handlebar</b>.colors</span><span>Runs entirely in your browser</span></footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d', {willReadFrequently: true});
+const mask = document.createElement('canvas'), mctx = mask.getContext('2d', {willReadFrequently: true});
+const sc = document.createElement('canvas'), sctx = sc.getContext('2d'); // current stroke, opaque; blended into mask at brush opacity
+let before = null; // mask as it was when the current stroke started
+let orig = null, detected = [], base = null, accent = null, color = null, last = null, queued = false;
+
+const hex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+const unhex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const clamp = v => Math.min(1, Math.max(0, v));
+const lum = (d, i) => (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+const hueDiff = (a, b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+function rgb2hsl([r, g, b]) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let h = 0, s = 0;
+  if (d) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h = (h * 60 + 360) % 360;
+  }
+  return [h, s, l];
+}
+function hsl2rgb([h, s, l]) {
+  h = (h % 360 + 360) % 360;
+  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+console.assert(hex(hsl2rgb(rgb2hsl([200, 30, 90]))) === '#c81e5a', 'hsl roundtrip broken');
+
+const drop = $('#drop');
+$('#file').onchange = e => load(e.target.files[0]);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); load(e.dataTransfer.files[0]); };
+$('#new').onclick = () => $('#file').click();
+
+function load(f) {
+  if (!f || !f.type.startsWith('image/')) return;
+  drop.style.display = 'none';
+  $('#editor').classList.add('on');
+  $('#results').hidden = false;
+  const img = new Image();
+  img.onload = () => {
+    const k = Math.min(1, 1200 / img.width);
+    cv.width = mask.width = sc.width = img.width * k | 0;
+    cv.height = mask.height = sc.height = img.height * k | 0;
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    orig = ctx.getImageData(0, 0, cv.width, cv.height);
+    URL.revokeObjectURL(img.src);
+    color = null;
+    detect();
+  };
+  img.src = URL.createObjectURL(f);
+  $('#file').value = ''; // allow re-picking the same file
+}
+
+// ponytail: 4-bit color buckets + greedy dedupe; swap for k-means if detection is too coarse
+function detect() {
+  const d = orig.data, cnt = new Map();
+  for (let i = 0; i < d.length; i += 16) {
+    const k = (d[i] >> 4) << 8 | (d[i + 1] >> 4) << 4 | d[i + 2] >> 4;
+    cnt.set(k, (cnt.get(k) || 0) + 1);
+  }
+  detected = [];
+  for (const [k, n] of [...cnt].sort((a, b) => b[1] - a[1])) {
+    const rgb = [(k >> 8 & 15) * 16 + 8, (k >> 4 & 15) * 16 + 8, (k & 15) * 16 + 8];
+    if (detected.every(c => dist(c.rgb, rgb) > 60)) detected.push({rgb, n});
+    if (detected.length >= 8) break;
+  }
+  // frame = most "colorful" common color; grays/near-black/near-white score 0
+  for (const c of detected) { const [, s, l] = rgb2hsl(c.rgb); c.score = l > .12 && l < .9 ? c.n * s : 0; }
+  const best = [...detected].sort((a, b) => b.score - a.score)[0];
+  setBase(best.score ? best.rgb : detected[0].rgb);
+  $('#detected').replaceChildren(...detected.map(c => swatch(hex(c.rgb), c.rgb, () => setBase(c.rgb))));
+}
+
+function setBase(rgb) {
+  base = rgb;
+  const bh = rgb2hsl(base)[0];
+  accent = [...detected].sort((a, b) => b.score - a.score)
+    .find(c => c.score && dist(c.rgb, base) > 60 && hueDiff(rgb2hsl(c.rgb)[0], bh) > 30)?.rgb;
+  suggest();
+}
+
+function suggest() {
+  const [h, s, l] = rgb2hsl(base);
+  const t = dh => hsl2rgb([h + dh, Math.max(s, .55), Math.min(Math.max(l, .35), .6)]);
+  const out = [['Match frame', base]];
+  if (s > .15) out.push(
+    ['Complementary', t(180)], ['Analogous +30°', t(30)], ['Analogous −30°', t(-30)],
+    ['Triadic', t(120)], ['Triadic', t(240)],
+    ['Lighter tone', hsl2rgb([h, s, Math.min(l + .25, .9)])], ['Darker tone', hsl2rgb([h, s, Math.max(l - .25, .08)])]);
+  if (accent) out.push(['Match accent', accent]);
+  out.push(['Classic black', [20, 20, 20]], ['Classic white', [240, 240, 240]], ['Gum / tan', [160, 110, 60]], ['Celeste', [136, 209, 196]]);
+  $('#suggest').replaceChildren(...out.map(([name, rgb]) => swatch(name, rgb, () => apply(rgb))));
+  $('#crazy').replaceChildren(...crazy(h, out.map(o => o[1])).map(([name, rgb]) => swatch(name, rgb, () => apply(rgb))));
+  render();
+}
+
+// Wild picks: odd hue jumps off the frame color plus loud named colors, skipping anything close to a regular suggestion.
+function crazy(h, taken) {
+  const cands = [
+    ['Off-axis +90°', hsl2rgb([h + 90, 1, .5])], ['Off-axis −90°', hsl2rgb([h - 90, 1, .5])],
+    ['Neon clash', hsl2rgb([h + 165, 1, .55])], ['Pastel twist', hsl2rgb([h + 60, .9, .82])],
+    ['Neon lime', [190, 255, 0]], ['Hot pink', [255, 20, 147]], ['Safety orange', [255, 103, 0]],
+    ['Electric blue', [0, 120, 255]], ['Acid yellow', [232, 255, 20]], ['Ultraviolet', [110, 0, 255]],
+    ['Cyber teal', [0, 255, 200]], ['Lava red', [255, 40, 0]], ['Bubblegum', [255, 150, 210]],
+    ['Toxic green', [57, 255, 20]], ['Gold leaf', [212, 175, 55]], ['Fuchsia', [230, 0, 230]],
+  ];
+  const far = cands.filter(([, rgb]) => taken.every(t => dist(t, rgb) > 70));
+  // always show at least 10, topping up with the closest-but-not-filtered ones if needed
+  return far.length >= 10 ? far : [...far, ...cands.filter(c => !far.includes(c))].slice(0, 10);
+}
+
+function swatch(label, rgb, onclick) {
+  const b = document.createElement('button');
+  b.className = 'sw';
+  b.innerHTML = `<i style="background:${hex(rgb)}"></i>${label}`;
+  b.title = hex(rgb);
+  b.onclick = () => { (b.parentNode.classList.contains('bars') ? document : b.parentNode).querySelectorAll(b.parentNode.classList.contains('bars') ? '.bars .sw' : '.sw').forEach(x => x.classList.remove('on')); b.classList.add('on'); onclick(); };
+  return b;
+}
+
+function apply(rgb) { color = rgb; $('#custom').value = hex(rgb); render(); }
+$('#custom').oninput = e => apply(unhex(e.target.value));
+
+// Recolor masked pixels: take hue/sat from target, keep original shading as a lightness offset.
+function render() {
+  queued = false;
+  if (!orig) return;
+  const out = new ImageData(new Uint8ClampedArray(orig.data), orig.width, orig.height), d = out.data;
+  const m = mctx.getImageData(0, 0, mask.width, mask.height).data;
+  let sum = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4) if (m[i + 3]) { const a = m[i + 3] / 255; sum += lum(d, i) * a; n += a; }
+  const mean = n ? sum / n : 0, tgt = color && rgb2hsl(color);
+  for (let i = 0; i < d.length; i += 4) {
+    const a = m[i + 3] / 255;
+    if (!a) continue;
+    const rgb = tgt ? hsl2rgb([tgt[0], tgt[1], clamp(tgt[2] + lum(d, i) - mean)]) : [255, 0, 200];
+    const k = tgt ? a : a * .5; // no color chosen yet → show mask as a pink overlay
+    for (let j = 0; j < 3; j++) d[i + j] += (rgb[j] - d[i + j]) * k;
+  }
+  ctx.putImageData(out, 0, 0);
+}
+
+const mode = () => $('[name=mode]:checked').value;
+const pos = e => [e.offsetX * cv.width / cv.clientWidth, e.offsetY * cv.height / cv.clientHeight];
+
+cv.onpointerdown = e => {
+  if (!orig) return;
+  const p = pos(e);
+  if (mode() === 'pick') return setBase(avgAt(p));
+  cv.setPointerCapture(e.pointerId);
+  before = mctx.getImageData(0, 0, mask.width, mask.height);
+  sctx.clearRect(0, 0, sc.width, sc.height);
+  last = [p[0] - .01, p[1]]; // tiny offset so a single click draws a dot
+  stroke(p);
+};
+cv.onpointermove = e => { moveCursor(e); if (last) stroke(pos(e)); };
+cv.onpointerup = cv.onpointercancel = () => last = before = null;
+
+function stroke(p) {
+  // draw the stroke opaque on its own layer, then lay it over the pre-stroke mask once at the brush opacity,
+  // so overlapping segments of one stroke don't stack up darker
+  sctx.lineCap = sctx.lineJoin = 'round';
+  sctx.lineWidth = $('#size').value;
+  sctx.strokeStyle = '#fff';
+  sctx.beginPath(); sctx.moveTo(...last); sctx.lineTo(...p); sctx.stroke();
+  mctx.putImageData(before, 0, 0);
+  mctx.globalCompositeOperation = mode() === 'erase' ? 'destination-out' : 'source-over';
+  mctx.globalAlpha = $('#opacity').value / 100;
+  mctx.drawImage(sc, 0, 0);
+  mctx.globalAlpha = 1;
+  mctx.globalCompositeOperation = 'source-over';
+  last = p;
+  if (!queued) { queued = true; requestAnimationFrame(render); }
+}
+
+function avgAt([x, y]) {
+  const s = [0, 0, 0]; let n = 0;
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const px = Math.round(x) + dx, py = Math.round(y) + dy;
+    if (px < 0 || py < 0 || px >= orig.width || py >= orig.height) continue;
+    const i = (py * orig.width + px) * 4;
+    for (let j = 0; j < 3; j++) s[j] += orig.data[i + j];
+    n++;
+  }
+  return s.map(v => v / n);
+}
+
+// Brush preview: a circle the size of the brush that follows the pointer (or sits centered while adjusting the sliders)
+const cur = $('#cursor'), stage = $('#stage');
+function showCursor(x, y) {
+  const size = $('#size').value * cv.clientWidth / cv.width, op = $('#opacity').value / 100;
+  const fill = mode() === 'erase' ? '255,255,255' : color ? color.map(Math.round).join() : '255,0,200';
+  Object.assign(cur.style, {
+    display: 'block', width: size + 'px', height: size + 'px',
+    transform: `translate(${x - size / 2}px,${y - size / 2}px)`,
+    background: `rgba(${fill},${op * .5})`,
+  });
+}
+function moveCursor(e) { if (mode() === 'pick') return cur.style.display = 'none'; showCursor(e.offsetX, e.offsetY); }
+cv.onpointerenter = moveCursor;
+cv.onpointerleave = () => { if (!last) cur.style.display = 'none'; };
+let hideT;
+$('#size').oninput = $('#opacity').oninput = () => {
+  if (!orig) return;
+  showCursor(cv.clientWidth / 2, cv.clientHeight / 2);
+  clearTimeout(hideT); hideT = setTimeout(() => cur.style.display = 'none', 800);
+};
+document.querySelectorAll('[name=mode]').forEach(r => r.onchange = () => stage.classList.toggle('pick', mode() === 'pick'));
+
+$('#pin').onclick = e => {
+  const on = $('#card').classList.toggle('pinned');
+  e.target.setAttribute('aria-pressed', on);
+  e.target.textContent = on ? 'Pinned' : 'Pin';
+};
+$('#clear').onclick = () => { mctx.clearRect(0, 0, mask.width, mask.height); render(); };
+// ---- bike24 side sheet ----
+// Map any color to the nearest plain color name that shops use for bar tape.
+function colorName(rgb) {
+  const [h, s, l] = rgb2hsl(rgb);
+  if (s < .15 || l < .1 || l > .93) return l < .25 ? 'black' : l > .8 ? 'white' : 'grey';
+  if (h >= 15 && h < 50 && (l < .35 || l < .5 && s < .7)) return 'brown';
+  if (h >= 20 && h < 55 && s < .55 && l > .6) return 'beige';
+  if ((h < 15 || h >= 335) && l > .72) return 'pink';
+  return h < 15 ? 'red' : h < 40 ? 'orange' : h < 65 ? 'yellow' : h < 160 ? 'green' : h < 195 ? 'turquoise'
+    : h < 255 ? 'blue' : h < 290 ? 'purple' : h < 335 ? 'pink' : 'red';
+}
+console.assert(colorName([20, 20, 20]) === 'black' && colorName([240, 240, 240]) === 'white' && colorName([200, 30, 30]) === 'red'
+  && colorName([30, 90, 200]) === 'blue' && colorName([160, 110, 60]) === 'brown' && colorName([255, 20, 147]) === 'pink'
+  && colorName([255, 103, 0]) === 'orange' && colorName([212, 175, 55]) === 'yellow', 'colorName broken');
+
+// ponytail: hand-picked list (bike24 blocks scraping and has no public API); refresh by hand if links rot
+const TAPES = [
+  { name: 'Deda Handlebar Tape', url: 'https://www.bike24.com/p24252.html', multi: true },
+  { name: 'Lizard Skins DSP V2 Bar Tape 3.2 mm', url: 'https://www.bike24.com/p2374963.html', multi: true },
+  { name: 'Fizik Vento Microtex Tacky 2mm (colored)', url: 'https://www.bike24.com/p2328359.html', multi: true },
+  { name: 'SRAM SuperCork Bar Tape', url: 'https://www.bike24.com/p27631.html', multi: true },
+  { name: 'BBB Cycling RaceRibbon BHT-01', url: 'https://www.bike24.com/p222721.html', multi: true },
+  { name: 'Easton Pinline Foam Bar Tape', url: 'https://www.bike24.com/p278638.html', multi: true },
+  { name: 'Selle Italia SG-Tape (red)', url: 'https://www.bike24.com/p2866735.html', only: 'red' },
+  { name: 'BBB Cycling Ultraribbon Gel BHT-15G (black)', url: 'https://www.bike24.com/p2702968.html', only: 'black' },
+  { name: 'Ergon BT Allroad (black)', url: 'https://www.bike24.com/p2583365.html', only: 'black' },
+];
+
+function openShop() {
+  const body = $('#sheet-body');
+  if (!color) {
+    body.innerHTML = '<p class="note" style="font-size:14px">Pick a handlebar color first, then come back here for matching tape.</p>';
+  } else {
+    const name = colorName(color), q = encodeURIComponent(`site:bike24.com bar tape ${name}`);
+    const exact = TAPES.filter(t => t.only === name), multi = TAPES.filter(t => t.multi);
+    const item = (t, sub) => `<a class="prod" href="${t.url}" target="_blank" rel="noopener"><b>${t.name}</b><span>${sub}</span></a>`;
+    body.innerHTML = `
+      <div class="chip"><i style="background:${hex(color)}"></i><div>Your pick is closest to <b>${name}</b><br><span class="note" style="margin:0">${hex(color)}</span></div></div>
+      ${exact.map(t => item(t, `Comes in ${name}`)).join('')}
+      ${multi.map(t => item(t, `Several colors · choose ${name} on the product page`)).join('')}
+      <a class="prod more" href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener"><b>More ${name} bar tape on bike24</b><span>Google search limited to bike24.com</span></a>
+      <a class="prod more" href="https://www.bike24.com/bar-tape.html" target="_blank" rel="noopener"><b>Browse all bar tape</b><span>bike24.com</span></a>
+      <p class="note">Color availability and stock change on bike24. Check the color options on each product page.</p>`;
+  }
+  $('#sheet').showModal();
+}
+$('#shop').onclick = openShop;
+$('#sheet-close').onclick = () => $('#sheet').close();
+$('#sheet').onclick = e => { if (e.target === e.currentTarget) e.currentTarget.close(); }; // click on backdrop
+
+$('#dl').onclick = () => { const a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = 'bike.png'; a.click(); };
+</script>
