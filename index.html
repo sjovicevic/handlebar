@@ -68,6 +68,10 @@
   input[type=color]{width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:999px;background:none;cursor:pointer}
   input[type=color]::-webkit-color-swatch-wrapper{padding:3px}
   input[type=color]::-webkit-color-swatch{border:0;border-radius:50%}
+  .hexf{height:34px;padding:0 4px 0 12px;border:1px solid var(--line);border-radius:999px;background:var(--card)}
+  .hexf:focus-within{border-color:#0082fb;box-shadow:0 0 0 1px #0082fb}
+  .hexf input{width:64px;border:0;outline:0;background:none;color:var(--fg-100);font:500 13px ui-monospace,monospace;text-transform:lowercase}
+  .hexf input[aria-invalid=true]{color:#e5484d}
   .hint{margin:8px 4px 0;font-size:13px;color:var(--fg-400)}
   footer{display:flex;justify-content:space-between;max-width:732px;margin:0 auto;padding:0 16px 32px;font-size:13px;color:#c2c2c2}
   /* side sheet (native <dialog>) */
@@ -130,7 +134,8 @@
   <div class="row bars" id="suggest"></div>
   <h2>Go totally crazy · just an experiment</h2>
   <div class="row bars" id="crazy"></div>
-  <div class="row" style="margin-top:12px"><label class="custom"><input type="color" id="custom"> Custom color</label></div>
+  <div class="row" style="margin-top:12px"><label class="custom"><input type="color" id="custom"> Custom color</label>
+    <label class="custom hexf">#<input id="hex" maxlength="7" placeholder="ff6700" spellcheck="false" autocomplete="off" aria-label="Hex color"></label></div>
   </section>
 </main>
 <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
@@ -267,8 +272,14 @@ function swatch(label, rgb, onclick) {
   return b;
 }
 
-function apply(rgb) { color = rgb; $('#custom').value = hex(rgb); render(); }
+function apply(rgb) { color = rgb; $('#custom').value = hex(rgb); $('#hex').value = hex(rgb).slice(1); $('#hex').ariaInvalid = false; render(); }
 $('#custom').oninput = e => apply(unhex(e.target.value));
+$('#hex').oninput = e => {
+  const v = e.target.value.trim().replace(/^#/, '');
+  const ok = /^[0-9a-f]{6}$/i.test(v);
+  e.target.ariaInvalid = v.length >= 6 && !ok;
+  if (ok) apply(unhex('#' + v));
+};
 
 // Recolor masked pixels: take hue/sat from target, keep original shading as a lightness offset.
 function render() {
